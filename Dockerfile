@@ -51,7 +51,7 @@ COPY security-headers.conf /etc/nginx/security-headers.conf
 COPY --from=builder /app/out /website/pdfcraft
 
 # Expose port 80
-EXPOSE 80
+EXPOSE 8080
 
 # Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
