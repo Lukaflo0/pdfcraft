@@ -27,20 +27,49 @@ services:
     profiles:
       - prod
 
+  cache-init:
+    image: busybox
+    user: "0:0"
+    command: sh -c "mkdir -p /cache/client_temp /cache/proxy_temp /cache/fastcgi_temp /cache/uwsgi_temp /cache/scgi_temp && chown -R 1000:1000 /cache /run"
+    volumes:
+      - nginx_cache:/cache
+      - nginx_run:/run
+    profiles:
+      - prod
+
   web:
     image: nginx:1.25-alpine
-    ports:
-      - "8080:80"
+    container_name: pdfcraft
+    restart: unless-stopped
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - static_out:/website/pdfcraft:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./security-headers.conf:/etc/nginx/security-headers.conf:ro
+      - nginx_cache:/var/cache/nginx
+      - nginx_run:/var/run
     depends_on:
       builder:
         condition: service_completed_successfully
+      cache-init:
+        condition: service_completed_successfully
+    networks:
+      - proxy
     profiles:
       - prod
+
+networks:
+  proxy:
+    external: true
 
 volumes:
   node_modules:
   static_out:
+  nginx_cache:
+  nginx_run:
